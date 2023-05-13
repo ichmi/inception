@@ -5,10 +5,10 @@ services:
         image: nginx
         container_name: nginx
         build:
-            context: ./nginx
+            context: ./requirements/nginx
         restart: always
         ports:
-            - 443:443
+            - "443:443"
         env_file:
             - .env
         depends_on:
@@ -22,7 +22,7 @@ services:
         image: mariadb
         container_name: mariadb
         build:
-            context: ./mariadb
+            context: ./requirements/mariadb
             args:
                 - MYSQL_DATABASE
                 - MYSQL_USER
@@ -40,7 +40,7 @@ services:
         image: wordpress
         container_name: wordpress
         build:
-            context: ./wordpress
+            context: ./requirements/wordpress
             args:
                 - MYSQL_USER
                 - MYSQL_PASSWORD
@@ -52,6 +52,72 @@ services:
             - mariadb
         volumes:
             - wordpress_data:/var/www/html
+        networks:
+            - inception_network
+
+    app:
+        image: app
+        container_name: app
+        build:
+            context: ./bonus/app
+        restart: always
+        depends_on:
+            - nginx
+        networks:
+            - inception_network
+
+    redis:
+        image: redis
+        container_name: redis
+        build:
+            context: ./bonus/redis
+        restart: always
+        depends_on:
+            - wordpress
+        networks:
+            - inception_network
+
+    adminer:
+        image: adminer
+        container_name: adminer
+        build:
+            context: ./bonus/adminer
+        restart: always
+        depends_on:
+            - mariadb
+        networks:
+            - inception_network
+
+    ftp:
+        image: ftp
+        container_name: ftp
+        build:
+            context: ./bonus/ftp
+            args:
+                - FTP_USER
+                - FTP_PASS
+        restart: always
+        ports:
+            - "21:21"
+        volumes:
+            - wordpress_data:/var/www/html
+        depends_on:
+            - wordpress
+        networks:
+            - inception_network
+
+    ngrok:
+        image: ngrok
+        container_name: ngrok
+        build:
+            context: ./bonus/ngrok/
+            args:
+                - AUTH_TOKEN
+        restart: always
+        ports:
+            - "4040:4040"
+        depends_on:
+            - app
         networks:
             - inception_network
 
